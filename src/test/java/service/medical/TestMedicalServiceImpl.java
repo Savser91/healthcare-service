@@ -2,7 +2,7 @@ package service.medical;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
+import org.mockito.*;
 import ru.netology.patient.entity.*;
 import ru.netology.patient.repository.PatientInfoFileRepository;
 import ru.netology.patient.service.alert.SendAlertServiceImpl;
@@ -32,4 +32,30 @@ public class TestMedicalServiceImpl {
         Assertions.assertEquals(expected, captor.getValue());
     }
 
+    @Test
+    public void check_GetWarningIfTemperatureIsNotOk(){
+        PatientInfoFileRepository patientInfoFileRepository = Mockito.mock(PatientInfoFileRepository.class);
+        SendAlertServiceImpl service = Mockito.mock(SendAlertServiceImpl.class);
+        MedicalService medicalService = new MedicalServiceImpl(patientInfoFileRepository, service);
+        Mockito.when(patientInfoFileRepository.getById(patientId))
+                .thenReturn(patientInfo);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+
+        String expected = String.format("Warning, patient with id: %s, need help", patientId);
+        medicalService.checkTemperature(patientId, new BigDecimal("34.8"));
+        Mockito.verify(service, Mockito.only()).send(captor.capture());
+        Assertions.assertEquals(expected, captor.getValue());
+    }
+
+    @Test
+    public void check_NoWorningIfOk(){
+        PatientInfoFileRepository patientInfoFileRepository = Mockito.mock(PatientInfoFileRepository.class);
+        SendAlertServiceImpl service = Mockito.mock(SendAlertServiceImpl.class);
+        MedicalService medicalService = new MedicalServiceImpl(patientInfoFileRepository, service);
+        Mockito.when(patientInfoFileRepository.getById(patientId))
+                .thenReturn(patientInfo);
+
+        medicalService.checkTemperature(patientId, new BigDecimal("36.6"));
+        Mockito.verify(service, Mockito.never()).send(Matchers.any());
+    }
 }
